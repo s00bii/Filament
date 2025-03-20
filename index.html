@@ -54,11 +54,22 @@
 
   <script>
         // Fetch rolls from Vercel KV
-    async function fetchRolls() {
+        async function fetchRolls() {
+    try {
         const response = await fetch('/api/rolls');
-        return response.ok ? await response.json() : [];
-    }
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log("Fetched Data:", data); // Debugging
+        return data || [];
+    } catch (error) {
+        console.error("Error fetching rolls:", error);
+        return [];
+    }
+}
     // Save rolls to Vercel KV
     async function saveRolls() {
         await fetch('/api/rolls', {
