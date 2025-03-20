@@ -55,31 +55,49 @@
   </div>
 
   <script>
-    let rolls = JSON.parse(localStorage.getItem('rolls')) || [];
+    let rolls = [];
+
+    async function fetchRolls() {
+      const response = await fetch('/api/rolls');
+      rolls = response.ok ? await response.json() : [];
+    }
+
+    async function saveRolls() {
+      await fetch('/api/rolls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rolls })
+      });
+    }
+
     const params = new URLSearchParams(window.location.search);
     const rollId = params.get('id');
 
-    if (rollId !== 'new') {
-      document.getElementById('formTitle').innerText = 'Edit Roll';
-      const roll = rolls.find(r => r.id == rollId);
-      if (roll) {
-        document.getElementById('type').value = roll.type;
-        document.getElementById('color').value = roll.color;
-        document.getElementById('grade').value = roll.grade;
-        document.getElementById('dopant').value = roll.dopant;
-        document.getElementById('rollNumber').value = roll.rollNumber;
-        document.getElementById('location').value = roll.location;
-        
-        // Display QR Code
-        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${roll.id}`;
-        document.getElementById('qrCode').src = qrCodeUrl;
+    async function initializeForm() {
+      await fetchRolls();
+
+      if (rollId !== 'new') {
+        document.getElementById('formTitle').innerText = 'Edit Roll';
+        const roll = rolls.find(r => r.id == rollId);
+        if (roll) {
+          document.getElementById('type').value = roll.type;
+          document.getElementById('color').value = roll.color;
+          document.getElementById('grade').value = roll.grade;
+          document.getElementById('dopant').value = roll.dopant;
+          document.getElementById('rollNumber').value = roll.rollNumber;
+          document.getElementById('location').value = roll.location;
+
+          // Display QR Code
+          const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${roll.id}`;
+          document.getElementById('qrCode').src = qrCodeUrl;
+        }
+      } else {
+        document.getElementById('formTitle').innerText = 'Add New Roll';
+        document.getElementById('qrCodeContainer').style.display = 'none';
       }
-    } else {
-      document.getElementById('formTitle').innerText = 'Add New Roll';
-      document.getElementById('qrCodeContainer').style.display = 'none';
     }
 
-    function saveRoll() {
+    async function saveRoll() {
       const rollNumberInput = document.getElementById('rollNumber').value;
       const isDuplicate = rolls.some(r => r.rollNumber === rollNumberInput && r.id != rollId);
 
@@ -107,9 +125,11 @@
         rolls[index] = newRoll;
       }
 
-      localStorage.setItem('rolls', JSON.stringify(rolls));
+      await saveRolls();
       window.location.href = 'index.html';
     }
+
+    initializeForm();
   </script>
 </body>
 </html>
