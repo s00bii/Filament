@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Roll</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .container { display: flex; align-items: center; justify-content: space-between; }
+    .form-container { display: flex; flex-direction: column; width: 45%; }
+    form { display: flex; flex-direction: column; }
+    label { margin-top: 10px; }
+    input, select { padding: 8px; margin-top: 5px; }
+    button { margin-top: 20px; padding: 10px; background-color: #4CAF50; color: white; cursor: pointer; }
+    .error { color: red; font-size: 0.9em; margin-top: 5px; }
+    .qr-code-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 45%; }
+    .qr-code { width: 200px; height: 200px; }
+  </style>
+</head>
+<body>
+  <h1 id="formTitle">Edit Roll</h1>
+  <div class="container">
+    <div class="form-container">
+      <form id="rollForm">
+        <label for="type">Type</label>
+        <select id="type">
+          <option value="PLA">PLA</option>
+          <option value="PETG">PETG</option>
+        </select>
+
+        <label for="color">Color</label>
+        <input type="text" id="color" required />
+
+        <label for="grade">Grade (1-5)</label>
+        <input type="number" id="grade" min="1" max="5" required />
+
+        <label for="dopant">Dopant %</label>
+        <input type="number" id="dopant" min="0" max="100" required />
+
+        <label for="rollNumber">Roll Number</label>
+        <input type="text" id="rollNumber" required />
+        <div class="error" id="rollNumberError"></div>
+
+        <label for="location">Location (Shelf and Building)</label>
+        <input type="text" id="location" required />
+
+        <button type="button" onclick="saveRoll()">Save Roll</button>
+      </form>
+    </div>
+
+    <div class="qr-code-container" id="qrCodeContainer">
+      <h2>QR Code</h2>
+      <img id="qrCode" class="qr-code" src="" alt="QR Code for this roll">
+    </div>
+  </div>
+
+  <script>
+    let rolls = JSON.parse(localStorage.getItem('rolls')) || [];
+    const params = new URLSearchParams(window.location.search);
+    const rollId = params.get('id');
+
+    if (rollId !== 'new') {
+      document.getElementById('formTitle').innerText = 'Edit Roll';
+      const roll = rolls.find(r => r.id == rollId);
+      if (roll) {
+        document.getElementById('type').value = roll.type;
+        document.getElementById('color').value = roll.color;
+        document.getElementById('grade').value = roll.grade;
+        document.getElementById('dopant').value = roll.dopant;
+        document.getElementById('rollNumber').value = roll.rollNumber;
+        document.getElementById('location').value = roll.location;
+        
+        // Display QR Code
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${roll.id}`;
+        document.getElementById('qrCode').src = qrCodeUrl;
+      }
+    } else {
+      document.getElementById('formTitle').innerText = 'Add New Roll';
+      document.getElementById('qrCodeContainer').style.display = 'none';
+    }
+
+    function saveRoll() {
+      const rollNumberInput = document.getElementById('rollNumber').value;
+      const isDuplicate = rolls.some(r => r.rollNumber === rollNumberInput && r.id != rollId);
+
+      if (isDuplicate) {
+        document.getElementById('rollNumberError').innerText = 'This roll number already exists.';
+        return;
+      } else {
+        document.getElementById('rollNumberError').innerText = '';
+      }
+
+      const newRoll = {
+        id: rollId === 'new' ? crypto.randomUUID() : rollId,
+        type: document.getElementById('type').value,
+        color: document.getElementById('color').value,
+        grade: parseInt(document.getElementById('grade').value),
+        dopant: parseFloat(document.getElementById('dopant').value),
+        rollNumber: rollNumberInput,
+        location: document.getElementById('location').value
+      };
+
+      if (rollId === 'new') {
+        rolls.push(newRoll);
+      } else {
+        const index = rolls.findIndex(r => r.id == rollId);
+        rolls[index] = newRoll;
+      }
+
+      localStorage.setItem('rolls', JSON.stringify(rolls));
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

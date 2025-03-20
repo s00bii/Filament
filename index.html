@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filament Roll Library</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .roll { border: 1px solid #ccc; padding: 10px; margin: 10px; cursor: pointer; }
+    .roll:hover { background-color: #f0f0f0; }
+    #addRollBtn { margin: 20px 0; padding: 10px; background-color: #4CAF50; color: white; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    th { cursor: pointer; }
+    tr:hover { background-color: #f0f0f0; }
+    .delete-btn { cursor: pointer; background-color: transparent; border: none; }
+    .delete-btn img { width: 30px; height: 30px; transition: transform 0.2s, filter 0.2s; }
+    .delete-btn img:hover { filter: brightness(0.8); transform: scale(1.1); }
+    .delete-cell { border-top: none !important; border-right: none !important; border-bottom: none !important; background-color: transparent !important; }
+    .delete-cell:hover { background-color: transparent !important; }
+    .qr-code { width: 50px; height: 50px; }
+    .sort-container { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Filament Roll Library</h1>
+  <button id="addRollBtn" onclick="addRoll()">Add New Roll</button>
+
+  <div class="sort-container">
+    <label for="sortCriteria">Sort By:</label>
+    <select id="sortCriteria" onchange="applySort()">
+      <option value="rollNumber">Roll Number</option>
+      <option value="color">Color</option>
+      <option value="grade">Grade</option>
+      <option value="type">Type</option>
+    </select>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th onclick="sortRolls('rollNumber')">Roll Number</th>  
+        <th onclick="sortRolls('type')">Type</th>
+        <th onclick="sortRolls('color')">Color</th>
+        <th onclick="sortRolls('grade')">Grade</th>
+        <th onclick="sortRolls('dopant')">Dopant %</th>
+        <th onclick="sortRolls('location')">Location</th>
+        <th>QR Code</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="rollList"></tbody>
+  </table>
+
+  <script>
+    let rolls = JSON.parse(localStorage.getItem('rolls')) || [];
+
+    function displayRolls() {
+      const rollList = document.getElementById('rollList');
+      rollList.innerHTML = '';
+      rolls.sort((a, b) => parseInt(a.rollNumber) - parseInt(b.rollNumber));
+
+      rolls.forEach(roll => {
+        const row = document.createElement('tr');
+        row.className = 'roll';
+
+        row.innerHTML = `
+          <td onclick="editRoll('${roll.id}')">${roll.rollNumber}</td>
+          <td onclick="editRoll('${roll.id}')">${roll.type}</td>
+          <td onclick="editRoll('${roll.id}')">${roll.color}</td>
+          <td onclick="editRoll('${roll.id}')">${roll.grade}</td>
+          <td onclick="editRoll('${roll.id}')">${roll.dopant}%</td>
+          <td onclick="editRoll('${roll.id}')">${roll.location}</td>
+          <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${roll.id}" class="qr-code"></td>
+          <td class="delete-cell">
+            <button class="delete-btn" onclick="confirmDelete('${roll.id}')">
+              <img src="image.png" alt="Delete">
+            </button>
+          </td>
+        `;
+
+        rollList.appendChild(row);
+      });
+    }
+
+    function colorOrder(color) {
+      const rainbowOrder = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+      const grayscaleOrder = ['black', 'gray', 'white'];
+      const colorLower = color.toLowerCase();
+
+      if (rainbowOrder.includes(colorLower)) {
+        return rainbowOrder.indexOf(colorLower);
+      } else if (grayscaleOrder.includes(colorLower)) {
+        return rainbowOrder.length + grayscaleOrder.indexOf(colorLower);
+      } else {
+        return rainbowOrder.length + grayscaleOrder.length + 1; // Unknown colors at the end
+      }
+    }
+
+    function sortRolls(property) {
+      if (property === 'color') {
+        rolls.sort((a, b) => colorOrder(a.color) - colorOrder(b.color));
+      } else {
+        rolls.sort((a, b) => (a[property] > b[property] ? 1 : -1));
+      }
+      displayRolls();
+    }
+
+    function applySort() {
+      const criteria = document.getElementById('sortCriteria').value;  //sort criteria is off for some reason fix it later -3:46PM (02-27)
+      sortRolls(criteria);
+    }
+
+    function editRoll(id) {
+      window.location.href = `edit_roll.html?id=${id}`;
+    }
+
+    function addRoll() {
+      window.location.href = 'edit_roll.html?id=new';
+    }
+
+    function confirmDelete(id) {
+      const confirmed = confirm("Are you sure you want to delete this roll? This action cannot be undone.");
+      if (confirmed) {
+        deleteRoll(id);
+      }
+    }
+
+    function deleteRoll(id) {
+      rolls = rolls.filter(roll => roll.id !== id);
+      localStorage.setItem('rolls', JSON.stringify(rolls));
+      displayRolls();
+    }
+
+    displayRolls();
+  </script>
+</body>
+</html>
