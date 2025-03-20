@@ -5,11 +5,17 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
         try {
-            const rolls = await kv.get('rolls') || [];
-            console.log("Fetched from KV:", rolls);
+            const rolls = await kv.get('rolls');  // Attempt to get rolls from KV
+
+            if (!rolls) {
+                console.warn("No rolls found in Vercel KV, returning empty array.");
+                return res.status(200).json([]); // Return empty array instead of failing
+            }
+
+            console.log("Fetched rolls:", rolls);
             return res.status(200).json(rolls);
         } catch (error) {
-            console.error("Error retrieving rolls:", error);
+            console.error("Error retrieving rolls from KV:", error);
             return res.status(500).json({ error: "Failed to retrieve rolls" });
         }
     }
@@ -17,8 +23,8 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
         try {
             const { rolls } = req.body;
+            console.log("Saving rolls to KV:", rolls);
             await kv.set('rolls', rolls);
-            console.log("Saved to KV:", rolls);
             return res.status(200).json({ message: "Rolls saved successfully!" });
         } catch (error) {
             console.error("Error saving rolls:", error);
