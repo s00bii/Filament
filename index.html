@@ -53,46 +53,21 @@
   </table>
 
   <script>
-        // Fetch rolls from Vercel KV
-        async function fetchRolls() {
-    try {
-        const response = await fetch('/api/rolls');
+    let rolls = [];
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+    async function fetchRolls() {
+        try {
+            const response = await fetch('/api/rolls');
+            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+            rolls = await response.json();
+            console.log("Fetched Rolls:", rolls);
+        } catch (error) {
+            console.error("Error fetching rolls:", error);
         }
-
-        const data = await response.json();
-        console.log("Fetched Data:", data); // Debugging
-        return data || [];
-    } catch (error) {
-        console.error("Error fetching rolls:", error);
-        return [];
-    }
-}
-    // Save rolls to Vercel KV
-    async function saveRolls() {
-        await fetch('/api/rolls', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rolls })
-        });
     }
 
-    // Delete a roll from Vercel KV
-    async function deleteRoll(id) {
-        await fetch('/api/rolls', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id })
-        });
-        rolls = rolls.filter(roll => roll.id !== id);
-        displayRolls();
-    }
-
-    // Display rolls on the page
     async function displayRolls() {
-        rolls = await fetchRolls();
+        await fetchRolls();
         const rollList = document.getElementById('rollList');
         rollList.innerHTML = '';
 
@@ -119,38 +94,24 @@
 
             rollList.appendChild(row);
         });
+
+        console.log("Rolls displayed successfully.");
     }
 
-    // Sorting functions
-    function colorOrder(color) {
-        const rainbowOrder = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
-        const grayscaleOrder = ['black', 'gray', 'white'];
-        const colorLower = color.toLowerCase();
-
-        if (rainbowOrder.includes(colorLower)) {
-            return rainbowOrder.indexOf(colorLower);
-        } else if (grayscaleOrder.includes(colorLower)) {
-            return rainbowOrder.length + grayscaleOrder.indexOf(colorLower);
-        } else {
-            return rainbowOrder.length + grayscaleOrder.length + 1; // Unknown colors at the end
+    async function deleteRoll(id) {
+        try {
+            await fetch('/api/rolls', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id })
+            });
+            rolls = rolls.filter(roll => roll.id !== id);
+            displayRolls();
+        } catch (error) {
+            console.error("Error deleting roll:", error);
         }
     }
 
-    /*function sortRolls(property) {
-        if (property === 'color') {
-            rolls.sort((a, b) => colorOrder(a.color) - colorOrder(b.color));
-        } else {
-            rolls.sort((a, b) => (a[property] > b[property] ? 1 : -1));
-        }
-        displayRolls();
-    }*/
-
-    function applySort() {
-        const criteria = document.getElementById('sortCriteria').value;
-        sortRolls(criteria);
-    }
-
-    // Navigation functions
     function editRoll(id) {
         window.location.href = `edit_roll.html?id=${id}`;
     }
@@ -159,17 +120,13 @@
         window.location.href = 'edit_roll.html?id=new';
     }
 
-    // Confirmation modal for deleting a roll
     function confirmDelete(id) {
-        const confirmed = confirm("Are you sure you want to delete this roll? This action cannot be undone.");
-        if (confirmed) {
+        if (confirm("Are you sure you want to delete this roll? This action cannot be undone.")) {
             deleteRoll(id);
         }
     }
 
-    // Initialize page by displaying rolls
     displayRolls();
-
   </script>
 </body>
 </html>
