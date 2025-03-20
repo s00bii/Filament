@@ -53,85 +53,110 @@
   </table>
 
   <script>
-    let rolls = JSON.parse(localStorage.getItem('rolls')) || [];
-
-    function displayRolls() {
-      const rollList = document.getElementById('rollList');
-      rollList.innerHTML = '';
-      rolls.sort((a, b) => parseInt(a.rollNumber) - parseInt(b.rollNumber));
-
-      rolls.forEach(roll => {
-        const row = document.createElement('tr');
-        row.className = 'roll';
-
-        row.innerHTML = `
-          <td onclick="editRoll('${roll.id}')">${roll.rollNumber}</td>
-          <td onclick="editRoll('${roll.id}')">${roll.type}</td>
-          <td onclick="editRoll('${roll.id}')">${roll.color}</td>
-          <td onclick="editRoll('${roll.id}')">${roll.grade}</td>
-          <td onclick="editRoll('${roll.id}')">${roll.dopant}%</td>
-          <td onclick="editRoll('${roll.id}')">${roll.location}</td>
-          <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${roll.id}" class="qr-code"></td>
-          <td class="delete-cell">
-            <button class="delete-btn" onclick="confirmDelete('${roll.id}')">
-              <img src="image.png" alt="Delete">
-            </button>
-          </td>
-        `;
-
-        rollList.appendChild(row);
-      });
+        // Fetch rolls from Vercel KV
+    async function fetchRolls() {
+        const response = await fetch('/api/rolls');
+        return response.ok ? await response.json() : [];
     }
 
-    function colorOrder(color) {
-      const rainbowOrder = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
-      const grayscaleOrder = ['black', 'gray', 'white'];
-      const colorLower = color.toLowerCase();
+    // Save rolls to Vercel KV
+    async function saveRolls() {
+        await fetch('/api/rolls', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rolls })
+        });
+    }
 
-      if (rainbowOrder.includes(colorLower)) {
-        return rainbowOrder.indexOf(colorLower);
-      } else if (grayscaleOrder.includes(colorLower)) {
-        return rainbowOrder.length + grayscaleOrder.indexOf(colorLower);
-      } else {
-        return rainbowOrder.length + grayscaleOrder.length + 1; // Unknown colors at the end
-      }
+    // Delete a roll from Vercel KV
+    async function deleteRoll(id) {
+        await fetch('/api/rolls', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id })
+        });
+        rolls = rolls.filter(roll => roll.id !== id);
+        displayRolls();
+    }
+
+    // Display rolls on the page
+    async function displayRolls() {
+        rolls = await fetchRolls();
+        const rollList = document.getElementById('rollList');
+        rollList.innerHTML = '';
+
+        rolls.sort((a, b) => parseInt(a.rollNumber) - parseInt(b.rollNumber));
+
+        rolls.forEach(roll => {
+            const row = document.createElement('tr');
+            row.className = 'roll';
+
+            row.innerHTML = `
+                <td onclick="editRoll('${roll.id}')">${roll.rollNumber}</td>
+                <td onclick="editRoll('${roll.id}')">${roll.type}</td>
+                <td onclick="editRoll('${roll.id}')">${roll.color}</td>
+                <td onclick="editRoll('${roll.id}')">${roll.grade}</td>
+                <td onclick="editRoll('${roll.id}')">${roll.dopant}%</td>
+                <td onclick="editRoll('${roll.id}')">${roll.location}</td>
+                <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${roll.id}" class="qr-code"></td>
+                <td class="delete-cell">
+                    <button class="delete-btn" onclick="confirmDelete('${roll.id}')">
+                        <img src="image.png" alt="Delete">
+                    </button>
+                </td>
+            `;
+
+            rollList.appendChild(row);
+        });
+    }
+
+    // Sorting functions
+    function colorOrder(color) {
+        const rainbowOrder = ['red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'violet'];
+        const grayscaleOrder = ['black', 'gray', 'white'];
+        const colorLower = color.toLowerCase();
+
+        if (rainbowOrder.includes(colorLower)) {
+            return rainbowOrder.indexOf(colorLower);
+        } else if (grayscaleOrder.includes(colorLower)) {
+            return rainbowOrder.length + grayscaleOrder.indexOf(colorLower);
+        } else {
+            return rainbowOrder.length + grayscaleOrder.length + 1; // Unknown colors at the end
+        }
     }
 
     function sortRolls(property) {
-      if (property === 'color') {
-        rolls.sort((a, b) => colorOrder(a.color) - colorOrder(b.color));
-      } else {
-        rolls.sort((a, b) => (a[property] > b[property] ? 1 : -1));
-      }
-      displayRolls();
+        if (property === 'color') {
+            rolls.sort((a, b) => colorOrder(a.color) - colorOrder(b.color));
+        } else {
+            rolls.sort((a, b) => (a[property] > b[property] ? 1 : -1));
+        }
+        displayRolls();
     }
 
     function applySort() {
-      const criteria = document.getElementById('sortCriteria').value;  //sort criteria is off for some reason fix it later -3:46PM (02-27)
-      sortRolls(criteria);
+        const criteria = document.getElementById('sortCriteria').value;
+        sortRolls(criteria);
     }
 
+    // Navigation functions
     function editRoll(id) {
-      window.location.href = `edit_roll.html?id=${id}`;
+        window.location.href = `edit_roll.html?id=${id}`;
     }
 
     function addRoll() {
-      window.location.href = 'edit_roll.html?id=new';
+        window.location.href = 'edit_roll.html?id=new';
     }
 
+    // Confirmation modal for deleting a roll
     function confirmDelete(id) {
-      const confirmed = confirm("Are you sure you want to delete this roll? This action cannot be undone.");
-      if (confirmed) {
-        deleteRoll(id);
-      }
+        const confirmed = confirm("Are you sure you want to delete this roll? This action cannot be undone.");
+        if (confirmed) {
+            deleteRoll(id);
+        }
     }
 
-    function deleteRoll(id) {
-      rolls = rolls.filter(roll => roll.id !== id);
-      localStorage.setItem('rolls', JSON.stringify(rolls));
-      displayRolls();
-    }
-
+    // Initialize page by displaying rolls
     displayRolls();
   </script>
 </body>
