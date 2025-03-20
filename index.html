@@ -136,14 +136,14 @@
         }
     }
 
-    function sortRolls(property) {
+    /*function sortRolls(property) {
         if (property === 'color') {
             rolls.sort((a, b) => colorOrder(a.color) - colorOrder(b.color));
         } else {
             rolls.sort((a, b) => (a[property] > b[property] ? 1 : -1));
         }
         displayRolls();
-    }
+    }*/
 
     function applySort() {
         const criteria = document.getElementById('sortCriteria').value;
@@ -169,6 +169,7 @@
 
     // Initialize page by displaying rolls
     displayRolls();
+
   </script>
 </body>
 </html>
