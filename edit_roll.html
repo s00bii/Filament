@@ -59,7 +59,7 @@
 
     async function fetchRolls() {
       try {
-        const response = await fetch('/pages/api/rolls');
+        const response = await fetch('/api/rolls');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         rolls = await response.json();
       } catch (error) {
@@ -69,7 +69,7 @@
 
     async function saveRolls() {
       try {
-        await fetch('/pages/api/rolls', {
+        await fetch('/api/rolls', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rolls })
