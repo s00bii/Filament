@@ -57,7 +57,7 @@
 
     async function fetchRolls() {
         try {
-            const response = await fetch('/pages/api/rolls');
+            const response = await fetch('/api/rolls');
             if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
             rolls = await response.json();
             console.log("Fetched Rolls:", rolls);
@@ -100,7 +100,7 @@
 
     async function deleteRoll(id) {
         try {
-            await fetch('/pages/api/rolls', {
+            await fetch('/api/rolls', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id })
