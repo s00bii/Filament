@@ -4,16 +4,105 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Edit Roll</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDYHhOrt2W5OWtIdUuHt-fEmvOrm2Vip1Y",
+      authDomain: "filamentadminpanel.firebaseapp.com",
+      databaseURL: "https://filamentadminpanel-default-rtdb.firebaseio.com",
+      projectId: "filamentadminpanel",
+      storageBucket: "filamentadminpanel.firebasestorage.app",
+      messagingSenderId: "135887717746",
+      appId: "1:135887717746:web:e2f74ca76265447b3749eb",
+      measurementId: "G-QSFX54DQ0W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const rollId = params.get('id');
+    const rollRef = ref(db, 'rolls');
+
+    let rolls = {};
+
+    async function fetchRolls() {
+      const snapshot = await get(rollRef);
+      if (snapshot.exists()) {
+        rolls = snapshot.val() || {};
+      }
+    }
+
+    async function saveRolls() {
+      await set(rollRef, rolls);
+    }
+
+    async function initializeForm() {
+      await fetchRolls();
+
+      if (rollId !== 'new' && rolls[rollId]) {
+        const roll = rolls[rollId];
+        document.getElementById('formTitle').innerText = 'Edit Roll';
+        document.getElementById('type').value = roll.type;
+        document.getElementById('color').value = roll.color;
+        document.getElementById('grade').value = roll.grade;
+        document.getElementById('dopant').value = roll.dopant;
+        document.getElementById('rollNumber').value = roll.rollNumber;
+        document.getElementById('location').value = roll.location;
+
+        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${rollId}`;
+        document.getElementById('qrCode').src = qrCodeUrl;
+      } else {
+        document.getElementById('formTitle').innerText = 'Add New Roll';
+        document.getElementById('qrCodeContainer').style.display = 'none';
+      }
+    }
+
+    async function saveRoll() {
+      const rollNumberInput = document.getElementById('rollNumber').value;
+      const isDuplicate = Object.entries(rolls).some(([id, r]) =>
+        r.rollNumber === rollNumberInput && id !== rollId
+      );
+
+      if (isDuplicate) {
+        document.getElementById('rollNumberError').innerText = 'This roll number already exists.';
+        return;
+      } else {
+        document.getElementById('rollNumberError').innerText = '';
+      }
+
+      const newId = rollId === 'new' ? crypto.randomUUID() : rollId;
+
+      rolls[newId] = {
+        id: newId,
+        type: document.getElementById('type').value,
+        color: document.getElementById('color').value,
+        grade: parseInt(document.getElementById('grade').value),
+        dopant: parseFloat(document.getElementById('dopant').value),
+        rollNumber: rollNumberInput,
+        location: document.getElementById('location').value
+      };
+
+      await saveRolls();
+      window.location.href = 'index.html';
+    }
+
+    window.saveRoll = saveRoll;
+    window.addEventListener('DOMContentLoaded', initializeForm);
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    .container { display: flex; align-items: center; justify-content: space-between; }
-    .form-container { display: flex; flex-direction: column; width: 45%; }
+    .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .form-container { display: flex; flex-direction: column; width: 100%; max-width: 500px; }
     form { display: flex; flex-direction: column; }
     label { margin-top: 10px; }
     input, select { padding: 8px; margin-top: 5px; }
-    button { margin-top: 20px; padding: 10px; background-color: #4CAF50; color: white; cursor: pointer; }
+    button { margin-top: 20px; padding: 10px; background-color: #4CAF50; color: white; cursor: pointer; border: none; border-radius: 4px; }
     .error { color: red; font-size: 0.9em; margin-top: 5px; }
-    .qr-code-container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 45%; }
+    .qr-code-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px; }
     .qr-code { width: 200px; height: 200px; }
   </style>
 </head>
@@ -53,92 +142,5 @@
       <img id="qrCode" class="qr-code" src="" alt="QR Code for this roll">
     </div>
   </div>
-
-  <script>
-    let rolls = [];
-
-    async function fetchRolls() {
-      try {
-        const response = await fetch('/api/rolls');
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        rolls = await response.json();
-      } catch (error) {
-        console.error("Error fetching rolls:", error);
-      }
-    }
-
-    async function saveRolls() {
-      try {
-        await fetch('/api/rolls', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rolls })
-        });
-      } catch (error) {
-        console.error("Error saving rolls:", error);
-      }
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const rollId = params.get('id');
-
-    async function initializeForm() {
-      await fetchRolls();
-
-      if (rollId !== 'new') {
-        document.getElementById('formTitle').innerText = 'Edit Roll';
-        const roll = rolls.find(r => r.id == rollId);
-        if (roll) {
-          document.getElementById('type').value = roll.type;
-          document.getElementById('color').value = roll.color;
-          document.getElementById('grade').value = roll.grade;
-          document.getElementById('dopant').value = roll.dopant;
-          document.getElementById('rollNumber').value = roll.rollNumber;
-          document.getElementById('location').value = roll.location;
-
-          // Display QR Code
-          const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${roll.id}`;
-          document.getElementById('qrCode').src = qrCodeUrl;
-        }
-      } else {
-        document.getElementById('formTitle').innerText = 'Add New Roll';
-        document.getElementById('qrCodeContainer').style.display = 'none';
-      }
-    }
-
-    async function saveRoll() {
-      const rollNumberInput = document.getElementById('rollNumber').value;
-      const isDuplicate = rolls.some(r => r.rollNumber === rollNumberInput && r.id !== rollId);
-
-      if (isDuplicate) {
-        document.getElementById('rollNumberError').innerText = 'This roll number already exists.';
-        return;
-      } else {
-        document.getElementById('rollNumberError').innerText = '';
-      }
-
-      const newRoll = {
-        id: rollId === 'new' ? crypto.randomUUID() : rollId,
-        type: document.getElementById('type').value,
-        color: document.getElementById('color').value,
-        grade: parseInt(document.getElementById('grade').value),
-        dopant: parseFloat(document.getElementById('dopant').value),
-        rollNumber: rollNumberInput,
-        location: document.getElementById('location').value
-      };
-
-      if (rollId === 'new') {
-        rolls.push(newRoll);
-      } else {
-        const index = rolls.findIndex(r => r.id == rollId);
-        rolls[index] = newRoll;
-      }
-
-      await saveRolls();
-      window.location.href = 'index.html';
-    }
-
-    initializeForm();
-  </script>
 </body>
 </html>
