@@ -53,7 +53,6 @@
           <td onclick="editRoll('${id}')">${roll.grade}</td>
           <td onclick="editRoll('${id}')">${roll.dopant}%</td>
           <td onclick="editRoll('${id}')">${roll.location}</td>
-          <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${id}" class="qr-code"></td>
           <td class="delete-cell">
             <button class="delete-btn" onclick="confirmDelete('${id}')">
               <img src="image.png" alt="Delete">
@@ -106,13 +105,20 @@
     .delete-btn img:hover { filter: brightness(0.8); transform: scale(1.1); }
     .delete-cell { border-top: none !important; border-right: none !important; border-bottom: none !important; background-color: transparent !important; }
     .delete-cell:hover { background-color: transparent !important; }
-    .qr-code { width: 50px; height: 50px; }
     .sort-container { margin-bottom: 20px; }
+    .main-qr { margin-left: 20px; text-align: center; }
   </style>
 </head>
 <body>
   <h1>Filament Roll Library</h1>
-  <button id="addRollBtn" onclick="addRoll()">Add New Roll</button>
+
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+    <button id="addRollBtn" onclick="addRoll()">Add New Roll</button>
+    <div class="main-qr">
+      <p><strong>Scan to open this page</strong></p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://filament-phi.vercel.app/index.html" alt="QR Code">
+    </div>
+  </div>
 
   <div class="sort-container">
     <label for="sortCriteria">Sort By:</label>
@@ -133,7 +139,6 @@
         <th onclick="sortRolls('grade')">Grade</th>
         <th onclick="sortRolls('dopant')">Dopant %</th>
         <th onclick="sortRolls('location')">Location</th>
-        <th>QR Code</th>
         <th></th>
       </tr>
     </thead>

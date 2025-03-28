@@ -6,7 +6,7 @@
   <title>Edit Roll</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getDatabase, ref, set, get, onValue, child } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDYHhOrt2W5OWtIdUuHt-fEmvOrm2Vip1Y",
@@ -51,12 +51,8 @@
         document.getElementById('dopant').value = roll.dopant;
         document.getElementById('rollNumber').value = roll.rollNumber;
         document.getElementById('location').value = roll.location;
-
-        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${window.location.origin}/edit_roll.html?id=${rollId}`;
-        document.getElementById('qrCode').src = qrCodeUrl;
       } else {
         document.getElementById('formTitle').innerText = 'Add New Roll';
-        document.getElementById('qrCodeContainer').style.display = 'none';
       }
     }
 
@@ -95,15 +91,13 @@
 
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
-    .container { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    .container { display: flex; align-items: center; justify-content: center; }
     .form-container { display: flex; flex-direction: column; width: 100%; max-width: 500px; }
     form { display: flex; flex-direction: column; }
     label { margin-top: 10px; }
     input, select { padding: 8px; margin-top: 5px; }
     button { margin-top: 20px; padding: 10px; background-color: #4CAF50; color: white; cursor: pointer; border: none; border-radius: 4px; }
     .error { color: red; font-size: 0.9em; margin-top: 5px; }
-    .qr-code-container { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-top: 40px; }
-    .qr-code { width: 200px; height: 200px; }
   </style>
 </head>
 <body>
@@ -135,11 +129,6 @@
 
         <button type="button" onclick="saveRoll()">Save Roll</button>
       </form>
-    </div>
-
-    <div class="qr-code-container" id="qrCodeContainer">
-      <h2>QR Code</h2>
-      <img id="qrCode" class="qr-code" src="" alt="QR Code for this roll">
     </div>
   </div>
 </body>
