@@ -4,6 +4,94 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Filament Roll Library</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDYHhOrt2W5OWtIdUuHt-fEmvOrm2Vip1Y",
+      authDomain: "filamentadminpanel.firebaseapp.com",
+      databaseURL: "https://filamentadminpanel-default-rtdb.firebaseio.com",
+      projectId: "filamentadminpanel",
+      storageBucket: "filamentadminpanel.firebasestorage.app",
+      messagingSenderId: "135887717746",
+      appId: "1:135887717746:web:e2f74ca76265447b3749eb",
+      measurementId: "G-QSFX54DQ0W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const rollRef = ref(db, 'rolls');
+
+    let rolls = {};
+    let sortKey = "rollNumber";
+
+    onValue(rollRef, snapshot => {
+      rolls = snapshot.val() || {};
+      displayRolls();
+    });
+
+    function displayRolls() {
+      const rollList = document.getElementById('rollList');
+      rollList.innerHTML = '';
+
+      const sorted = Object.values(rolls).sort((a, b) => {
+        const valA = a[sortKey]?.toString().toLowerCase() || '';
+        const valB = b[sortKey]?.toString().toLowerCase() || '';
+        return valA.localeCompare(valB, undefined, { numeric: true });
+      });
+
+      sorted.forEach(roll => {
+        const row = document.createElement('tr');
+        row.className = 'roll';
+        const id = roll.id;
+
+        row.innerHTML = `
+          <td onclick="editRoll('${id}')">${roll.rollNumber}</td>
+          <td onclick="editRoll('${id}')">${roll.type}</td>
+          <td onclick="editRoll('${id}')">${roll.color}</td>
+          <td onclick="editRoll('${id}')">${roll.grade}</td>
+          <td onclick="editRoll('${id}')">${roll.dopant}%</td>
+          <td onclick="editRoll('${id}')">${roll.location}</td>
+          <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${id}" class="qr-code"></td>
+          <td class="delete-cell">
+            <button class="delete-btn" onclick="confirmDelete('${id}')">
+              <img src="image.png" alt="Delete">
+            </button>
+          </td>
+        `;
+
+        rollList.appendChild(row);
+      });
+    }
+
+    window.editRoll = function(id) {
+      window.location.href = `edit_roll.html?id=${id}`;
+    };
+
+    window.addRoll = function() {
+      window.location.href = 'edit_roll.html?id=new';
+    };
+
+    window.confirmDelete = function(id) {
+      if (confirm("Are you sure you want to delete this roll? This action cannot be undone.")) {
+        delete rolls[id];
+        set(rollRef, rolls);
+      }
+    };
+
+    window.applySort = function() {
+      const selected = document.getElementById("sortCriteria").value;
+      sortKey = selected;
+      displayRolls();
+    };
+
+    window.sortRolls = function(criterion) {
+      sortKey = criterion;
+      displayRolls();
+    };
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; }
     .roll { border: 1px solid #ccc; padding: 10px; margin: 10px; cursor: pointer; }
@@ -51,82 +139,5 @@
     </thead>
     <tbody id="rollList"></tbody>
   </table>
-
-  <script>
-    let rolls = [];
-
-    async function fetchRolls() {
-        try {
-            const response = await fetch('/api/rolls');
-            if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-            rolls = await response.json();
-            console.log("Fetched Rolls:", rolls);
-        } catch (error) {
-            console.error("Error fetching rolls:", error);
-        }
-    }
-
-    async function displayRolls() {
-        await fetchRolls();
-        const rollList = document.getElementById('rollList');
-        rollList.innerHTML = '';
-
-        rolls.sort((a, b) => parseInt(a.rollNumber) - parseInt(b.rollNumber));
-
-        rolls.forEach(roll => {
-            const row = document.createElement('tr');
-            row.className = 'roll';
-
-            row.innerHTML = `
-                <td onclick="editRoll('${roll.id}')">${roll.rollNumber}</td>
-                <td onclick="editRoll('${roll.id}')">${roll.type}</td>
-                <td onclick="editRoll('${roll.id}')">${roll.color}</td>
-                <td onclick="editRoll('${roll.id}')">${roll.grade}</td>
-                <td onclick="editRoll('${roll.id}')">${roll.dopant}%</td>
-                <td onclick="editRoll('${roll.id}')">${roll.location}</td>
-                <td><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${window.location.origin}/edit_roll.html?id=${roll.id}" class="qr-code"></td>
-                <td class="delete-cell">
-                    <button class="delete-btn" onclick="confirmDelete('${roll.id}')">
-                        <img src="image.png" alt="Delete">
-                    </button>
-                </td>
-            `;
-
-            rollList.appendChild(row);
-        });
-
-        console.log("Rolls displayed successfully.");
-    }
-
-    async function deleteRoll(id) {
-        try {
-            await fetch('/api/rolls', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id })
-            });
-            rolls = rolls.filter(roll => roll.id !== id);
-            displayRolls();
-        } catch (error) {
-            console.error("Error deleting roll:", error);
-        }
-    }
-
-    function editRoll(id) {
-        window.location.href = `edit_roll.html?id=${id}`;
-    }
-
-    function addRoll() {
-        window.location.href = 'edit_roll.html?id=new';
-    }
-
-    function confirmDelete(id) {
-        if (confirm("Are you sure you want to delete this roll? This action cannot be undone.")) {
-            deleteRoll(id);
-        }
-    }
-
-    displayRolls();
-  </script>
 </body>
 </html>
